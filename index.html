@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrevista Clínica Inicial — Lucia Kratz</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDnrgaY8R0Zetkr18uHQJAZXIUa4EwDnv4",
+  authDomain: "entrevista-inicial.firebaseapp.com",
+  projectId: "entrevista-inicial",
+  storageBucket: "entrevista-inicial.firebasestorage.app",
+  messagingSenderId: "437375609844",
+  appId: "1:437375609844:web:f3c04056dcbd58172e27a1",
+  measurementId: "G-Y7EHRMMYDC"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window._db = db;
+
+// Expose Firestore helpers globally
+window.fsAddDoc = async (data) => {
+  try {
+    const docRef = await addDoc(collection(db, 'entrevistas'), data);
+    return docRef.id;
+  } catch(e){ console.error(e); return null; }
+};
+window.fsUpdateDoc = async (id, data) => {
+  try { await updateDoc(doc(db, 'entrevistas', id), data); return true; }
+  catch(e){ console.error(e); return false; }
+};
+window.fsDeleteDoc = async (id) => {
+  try { await deleteDoc(doc(db, 'entrevistas', id)); return true; }
+  catch(e){ console.error(e); return false; }
+};
+window.fsGetAll = async () => {
+  try {
+    const q = query(collection(db, 'entrevistas'), orderBy('savedAt','desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({...d.data(), _firebaseId: d.id}));
+  } catch(e){ console.error(e); return []; }
+};
+window._firebaseReady = true;
+// Trigger load after firebase is ready
+if(window._pendingLoad) window._pendingLoad();
+</script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#f3eafc;color:#2d2d2d;font-size:14px;min-height:100vh}
+.app{max-width:700px;margin:0 auto;padding:16px 12px 3rem}
+header{background:#7B00C4;border-radius:16px;margin-bottom:1.25rem;overflow:hidden}
+.hi{display:flex;align-items:center;justify-content:space-between;padding:16px 22px}
+.ht{color:#fff}
+.ht .dra{font-size:10px;letter-spacing:2px;opacity:.8;text-transform:uppercase}
+.ht .nome{font-size:26px;font-family:Georgia,serif;font-style:italic;line-height:1.1}
+.ht .cargo{font-size:11px;letter-spacing:2px;opacity:.85;margin-top:2px}
+.ht .crp{font-size:10px;opacity:.65;letter-spacing:1px;margin-top:1px}
+.htabs{display:flex;background:rgba(0,0,0,.18);border-top:1px solid rgba(255,255,255,.1)}
+.htab{flex:1;padding:10px;text-align:center;color:rgba(255,255,255,.7);font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.5px;border:none;background:none;font-family:inherit;transition:all .15s}
+.htab.active{color:#fff;background:rgba(255,255,255,.15);border-bottom:2px solid #fff}
+.screen{display:none}.screen.active{display:block}
+.card{background:#fff;border:1px solid #e8dff5;border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+.sec-title{font-size:12px;font-weight:700;color:#7B00C4;border-bottom:1px solid #e8dff5;padding-bottom:5px;margin:1rem 0 .75rem;text-transform:uppercase;letter-spacing:.5px}
+.sec-title:first-child{margin-top:0}
+.field{margin-bottom:11px}
+.lbl{font-size:11px;color:#888;margin-bottom:4px}
+input[type=text],input[type=date]{width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;color:#222;background:#fff;font-family:inherit}
+input:focus{outline:none;border-color:#7B00C4}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.age-badge{display:inline-block;margin-top:5px;padding:3px 11px;background:#f3e8fc;color:#7B00C4;border-radius:20px;font-size:12px;font-weight:700}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:.75rem}
+.pbtn{padding:.85rem .4rem;border:1px solid #ddd;border-radius:12px;background:#fff;cursor:pointer;text-align:center;font-family:inherit;transition:all .15s}
+.pbtn:hover{border-color:#7B00C4}
+.pbtn.selected{border:2px solid #7B00C4;background:#f3e8fc}
+.picon{font-size:20px;margin-bottom:4px}
+.plabel{font-size:11px;font-weight:600;color:#333;line-height:1.3}
+/* OBS SCALE */
+.obs-block{margin-bottom:18px}
+.obs-block-title{font-size:12px;font-weight:700;color:#444;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.obs-block-title::before{content:'';width:6px;height:6px;border-radius:50%;background:#7B00C4;flex-shrink:0}
+.obs-scale{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.obs-opt{border:1px solid #ddd;border-radius:10px;padding:8px 8px;cursor:pointer;text-align:center;transition:all .15s;background:#fff}
+.obs-opt:hover{border-color:#7B00C4}
+.obs-opt.sel-bom{border-color:#16a34a;background:#f0fdf4}
+.obs-opt.sel-medio{border-color:#d97706;background:#fffbeb}
+.obs-opt.sel-mau{border-color:#dc2626;background:#fef2f2}
+.obs-opt-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;color:#999}
+.obs-opt.sel-bom .obs-opt-label{color:#16a34a}
+.obs-opt.sel-medio .obs-opt-label{color:#d97706}
+.obs-opt.sel-mau .obs-opt-label{color:#dc2626}
+.obs-opt-desc{font-size:11px;color:#555;line-height:1.4;text-align:left}
+.obs-opt.sel-bom .obs-opt-desc{color:#15803d}
+.obs-opt.sel-medio .obs-opt-desc{color:#92400e}
+.obs-opt.sel-mau .obs-opt-desc{color:#b91c1c}
+/* QUESTIONS */
+.qblock{margin-bottom:16px}
+.qtxt{font-size:13px;color:#333;margin-bottom:7px;line-height:1.5}
+.opts{display:flex;flex-wrap:wrap;gap:5px}
+.opt{padding:4px 12px;border:1px solid #ddd;border-radius:20px;font-size:12px;cursor:pointer;background:#fff;color:#555;font-family:inherit;transition:all .15s}
+.opt:hover{border-color:#7B00C4;color:#7B00C4}
+.opt.sel{background:#7B00C4;color:#fff;border-color:#7B00C4}
+textarea{width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;resize:vertical;min-height:70px;font-family:inherit;color:#222}
+textarea:focus{outline:none;border-color:#7B00C4}
+/* DSM */
+.dsm-group{margin-bottom:14px}
+.dsm-group-title{font-size:11px;font-weight:700;color:#7B00C4;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding:4px 8px;background:#f3e8fc;border-radius:6px}
+.dsm-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px}
+.dsm-check{display:flex;align-items:flex-start;gap:7px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;cursor:pointer;transition:all .15s;background:#fff}
+.dsm-check:hover{border-color:#7B00C4;background:#f9f3ff}
+.dsm-check.checked{border-color:#7B00C4;background:#f3e8fc}
+.dsm-check input[type=checkbox]{accent-color:#7B00C4;width:13px;height:13px;flex-shrink:0;margin-top:2px}
+.dsm-check label{font-size:11px;color:#333;cursor:pointer;line-height:1.3}
+.dsm-outros-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:4px}
+.dsm-tag{display:flex;align-items:center;gap:4px;padding:4px 10px;background:#f3e8fc;border:1px solid #c084f5;border-radius:20px;font-size:12px;color:#7B00C4}
+.dsm-tag button{background:none;border:none;cursor:pointer;color:#7B00C4;font-size:14px;line-height:1;padding:0}
+.dsm-add-row{display:flex;gap:6px}
+.dsm-add-row input{flex:1;padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;font-family:inherit}
+.dsm-add-row button{padding:6px 14px;background:#7B00C4;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit}
+/* CLOCK TEST */
+.clock-section{margin-bottom:1rem}
+.clock-score-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.score-opt{border:1px solid #ddd;border-radius:10px;padding:8px;cursor:pointer;text-align:center;transition:all .15s;background:#fff}
+.score-opt:hover{border-color:#7B00C4}
+.score-opt.sel-ok{border-color:#16a34a;background:#f0fdf4}
+.score-opt.sel-parcial{border-color:#d97706;background:#fffbeb}
+.score-opt.sel-alt{border-color:#dc2626;background:#fef2f2}
+.score-opt .score-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;color:#999}
+.score-opt.sel-ok .score-label{color:#16a34a}
+.score-opt.sel-parcial .score-label{color:#d97706}
+.score-opt.sel-alt .score-label{color:#dc2626}
+.score-opt .score-desc{font-size:11px;color:#555;line-height:1.3}
+.clock-photo-area{border:2px dashed #c084f5;border-radius:12px;padding:1.5rem;text-align:center;cursor:pointer;transition:all .15s;background:#faf5ff;margin-bottom:8px}
+.clock-photo-area:hover{border-color:#7B00C4;background:#f3e8fc}
+.clock-photo-area p{font-size:12px;color:#888;margin-top:6px}
+.clock-preview{width:100%;max-height:280px;object-fit:contain;border-radius:10px;display:none}
+.clock-photo-icon{font-size:32px}
+/* BUTTONS */
+.btn-primary{width:100%;padding:11px;background:#7B00C4;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:1rem;font-family:inherit}
+.btn-primary:hover{background:#6500a8}
+.btn-sec{padding:9px 18px;background:#fff;color:#555;border:1px solid #ddd;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit}
+.btn-sec:hover{border-color:#7B00C4;color:#7B00C4}
+.btn-pdf{padding:10px 24px;background:#7B00C4;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-edit{padding:6px 14px;background:#f3e8fc;color:#7B00C4;border:1px solid #c084f5;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600}
+.btn-del{padding:6px 14px;background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit}
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:1rem;gap:8px}
+.pin-wrap{display:flex;flex-direction:column;align-items:center;padding:2.5rem 1rem}
+.pin-wrap p{font-size:13px;color:#888;margin-bottom:1rem}
+.pin-inp{letter-spacing:10px;font-size:24px;width:130px;text-align:center;padding:10px;border:1px solid #ddd;border-radius:10px;font-family:inherit;color:#222}
+.pin-inp:focus{outline:none;border-color:#7B00C4}
+.pin-err{color:#dc2626;font-size:12px;margin-top:6px;display:none}
+.hist-item{background:#fff;border:1px solid #e8dff5;border-radius:12px;padding:1rem 1.25rem;margin-bottom:.75rem}
+.hist-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.hist-nome{font-size:14px;font-weight:700;color:#333}
+.hist-info{font-size:11px;color:#888;margin-top:2px}
+.hist-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#f3e8fc;color:#7B00C4;white-space:nowrap}
+.hist-actions{display:flex;gap:6px;margin-top:.75rem;flex-wrap:wrap}
+.empty-state{text-align:center;padding:2rem;color:#aaa;font-size:13px}
+#clock-file,#clock-file-e{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="hi">
+      <div class="ht">
+        <div class="dra">Psicóloga</div>
+        <div class="nome">Lucia Kratz</div>
+        <div class="cargo">Entrevista Clínica Inicial</div>
+        <div class="crp">CRP 09/20590 · Goiânia-GO</div>
+      </div>
+    </div>
+    <div class="htabs" id="main-tabs" style="display:none">
+      <button class="htab active" onclick="switchTab('nova')">Nova Entrevista</button>
+      <button class="htab" onclick="switchTab('historico')">Realizadas</button>
+    </div>
+  </header>
+
+  <!-- LOGIN -->
+  <div id="s-login" class="screen active">
+    <div class="card"><div class="pin-wrap">
+      <p>Acesso restrito — Psicóloga</p>
+      <input class="pin-inp" type="password" id="pin" maxlength="4" placeholder="••••" oninput="checkPin(this.value)">
+      <div class="pin-err" id="pin-err">Senha incorreta</div>
+    </div></div>
+  </div>
+
+  <!-- NOVA -->
+  <div id="s-nova" class="screen">
+    <div id="s-cad">
+      <div class="card">
+        <div class="sec-title">Dados do paciente</div>
+        <div class="field"><div class="lbl">Nome completo</div><input type="text" id="nome" placeholder="Nome completo do paciente"></div>
+        <div class="field"><div class="lbl">Responsável (se menor)</div><input type="text" id="responsavel" placeholder="Nome do responsável"></div>
+        <div class="row2">
+          <div class="field"><div class="lbl">Data de nascimento</div><input type="date" id="dnasc" onchange="calcIdade()"><div id="idade-badge"></div></div>
+          <div class="field"><div class="lbl">Data da entrevista</div><input type="date" id="data-ent"></div>
+        </div>
+        <div class="sec-title">Perfil clínico</div>
+        <div style="font-size:11px;color:#888;margin-bottom:.6rem">Selecione a categoria</div>
+        <div class="pgrid" id="pgrid"></div>
+      </div>
+      <button class="btn-primary" onclick="iniciar()">Iniciar entrevista →</button>
+    </div>
+    <div id="s-form" style="display:none">
+      <div id="ent-content"></div>
+      <div class="nav-row">
+        <button class="btn-sec" onclick="voltarCad()">← Voltar</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sec" onclick="salvarRegistro()">Salvar</button>
+          <button class="btn-pdf" onclick="gerarPDF()">Gerar PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTÓRICO -->
+  <div id="s-historico" class="screen">
+    <div class="card"><div class="sec-title">Entrevistas realizadas</div><div id="hist-lista"></div></div>
+  </div>
+
+  <!-- EDIÇÃO -->
+  <div id="s-edicao" class="screen">
+    <div id="edit-content"></div>
+    <div class="nav-row">
+      <button class="btn-sec" onclick="switchTab('historico')">← Voltar</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sec" onclick="salvarEdicao()">Salvar alterações</button>
+        <button class="btn-pdf" onclick="gerarPDFEdicao()">Gerar PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PROFILES=[
+  {id:'pre',icon:'👶',label:'Pré-escolar\n(2–5 anos)'},
+  {id:'escolar',icon:'🧒',label:'Escolar\n(6–11 anos)'},
+  {id:'adol',icon:'🧑',label:'Adolescente\n(12–17 anos)'},
+  {id:'adulto',icon:'👨',label:'Adulto'},
+  {id:'idoso',icon:'👴',label:'Idoso'},
+];
+const YN=['Sim','Não','Às vezes','Com ajuda'];
+const FR=['Nunca','Raramente','Às vezes','Frequentemente','Sempre'];
+
+const OBS_SCALES={
+  adulto:[
+    {key:'aparencia',label:'Aparência geral (higiene e vestimenta)',bom:'Boa higiene: roupas limpas e adequadas, cabelo penteado, unhas cortadas, odor neutro.',medio:'Roupas amassadas ou pouco adequadas, sinais ocasionais de descuido, leve odor.',mau:'Roupas sujas, cabelo e unhas sem cuidado, odor forte, sinais claros de negligência.'},
+    {key:'mobilidade',label:'Mobilidade (marcha e equilíbrio)',bom:'Anda com firmeza, equilíbrio preservado, não necessita apoio.',medio:'Marcha lenta ou instável, uso ocasional de apoio, pequenos desequilíbrios.',mau:'Dificuldade acentuada, quedas frequentes, dependência de bengala ou acompanhante.'},
+    {key:'comunicacao',label:'Comunicação (fala e compreensão)',bom:'Fala clara, responde prontamente, compreende instruções simples.',medio:'Fala pausada ou pouco clara, compreensão parcial, necessita repetição.',mau:'Fala incoerente, dificuldade em compreender perguntas simples, respostas desorganizadas.'},
+    {key:'cognicao',label:'Cognição aparente (orientação e memória)',bom:'Orientado, reconhece pessoas, lembra fatos recentes, mantém atenção.',medio:'Confunde datas/locais, lapsos de memória ocasionais, atenção flutuante.',mau:'Desorientado, não reconhece pessoas próximas, não lembra fatos recentes, atenção muito prejudicada.'},
+    {key:'comportamento',label:'Comportamento e afeto',bom:'Humor adequado, iniciativa presente, interação espontânea.',medio:'Humor variável, iniciativa reduzida, sinais leves de apatia.',mau:'Humor deprimido ou irritável, ausência de iniciativa, apatia marcante ou agressividade.'},
+  ],
+  idoso:[
+    {key:'aparencia',label:'Aparência geral (higiene e vestimenta)',bom:'Boa higiene: roupas limpas e adequadas, cabelo penteado, unhas cortadas, odor neutro.',medio:'Roupas amassadas ou pouco adequadas, sinais ocasionais de descuido, leve odor.',mau:'Roupas sujas, cabelo e unhas sem cuidado, odor forte, sinais claros de negligência.'},
+    {key:'mobilidade',label:'Mobilidade (marcha e equilíbrio)',bom:'Anda com firmeza, equilíbrio preservado, não necessita apoio.',medio:'Marcha lenta ou instável, uso ocasional de apoio, pequenos desequilíbrios.',mau:'Dificuldade acentuada, quedas frequentes, dependência constante de bengala ou acompanhante.'},
+    {key:'comunicacao',label:'Comunicação (fala e compreensão)',bom:'Fala clara, responde prontamente, compreende instruções simples.',medio:'Fala pausada ou pouco clara, compreensão parcial, necessita repetição.',mau:'Fala incoerente, dificuldade em compreender perguntas, respostas desorganizadas.'},
+    {key:'cognicao',label:'Cognição aparente (orientação e memória)',bom:'Orientado, reconhece pessoas, lembra fatos recentes, mantém atenção.',medio:'Confunde datas/locais, lapsos de memória ocasionais, atenção flutuante.',mau:'Desorientado, não reconhece pessoas próximas, não lembra fatos recentes, atenção muito prejudicada.'},
+    {key:'afeto',label:'Afeto e comportamento',bom:'Humor adequado, iniciativa presente, interação espontânea.',medio:'Humor variável, iniciativa reduzida, sinais leves de apatia.',mau:'Humor deprimido ou irritável, ausência de iniciativa, apatia marcante ou agressividade.'},
+  ],
+  pre:[
+    {key:'motora_grossa',label:'Coordenação motora grossa',bom:'Adequada: anda, corre e sobe escadas com firmeza e equilíbrio para a idade.',medio:'Leve dificuldade em correr ou subir escadas, equilíbrio ocasionalmente instável.',mau:'Dificuldade acentuada na marcha, equilíbrio ruim, quedas frequentes.'},
+    {key:'motora_fina',label:'Motricidade fina',bom:'Segura lápis corretamente, monta blocos, manipula objetos pequenos.',medio:'Preensão insegura, dificuldade em tarefas de precisão, compensações observadas.',mau:'Não consegue segurar lápis ou montar blocos, coordenação fina muito reduzida.'},
+    {key:'linguagem',label:'Linguagem',bom:'Forma frases simples, vocabulário esperado para a idade, comunicação clara.',medio:'Vocabulário reduzido, frases incompletas, necessita estímulo para falar.',mau:'Ausência ou escassez de fala, não forma frases, comunicação muito prejudicada.'},
+    {key:'social',label:'Interação social',bom:'Responde ao chamado, busca contato, brinca com outras crianças.',medio:'Interação limitada, prefere brincar sozinha, responde ao chamado com atraso.',mau:'Não responde ao chamado, evita contato, isolamento social marcante.'},
+  ],
+  escolar:[
+    {key:'autonomia',label:'Autonomia em tarefas básicas',bom:'Higiene e organização escolar independentes, realiza tarefas sem supervisão.',medio:'Necessita lembretes ocasionais, higiene ou organização com pequenas falhas.',mau:'Depende de adulto para higiene e organização básica, muita supervisão necessária.'},
+    {key:'atencao',label:'Atenção e memória',bom:'Segue rotinas com facilidade, lembra compromissos, mantém atenção em tarefas.',medio:'Distrai-se com facilidade, lapsos de memória ocasionais, atenção flutuante.',mau:'Não mantém atenção, esquece rotinas frequentemente, muito distraído.'},
+    {key:'social',label:'Habilidades sociais',bom:'Tem amizades, coopera em grupo, resolve conflitos de forma adequada.',medio:'Dificuldade ocasional em cooperar, poucos amigos, conflitos esporádicos.',mau:'Isolamento, conflitos frequentes, dificuldade de cooperar em grupo.'},
+    {key:'linguagem',label:'Linguagem (leitura, escrita e fala)',bom:'Leitura e escrita conforme a série, fala clara, comunica-se bem.',medio:'Pequenas dificuldades na leitura ou escrita, fala pouco clara às vezes.',mau:'Dificuldade acentuada em leitura/escrita, fala pouco compreensível.'},
+  ],
+  adol:[
+    {key:'autonomia',label:'Autonomia ampliada',bom:'Usa transporte sozinho, maneja dinheiro, toma decisões com responsabilidade.',medio:'Necessita apoio ocasional, dificuldades pontuais com dinheiro ou deslocamento.',mau:'Depende de adulto para deslocamentos, sem manejo de dinheiro ou decisões.'},
+    {key:'organizacao',label:'Organização pessoal',bom:'Organiza horários de estudo e lazer, cumpre compromissos sem supervisão.',medio:'Organização irregular, necessita lembretes frequentes, compromissos às vezes perdidos.',mau:'Não organiza rotina, esquece compromissos, depende totalmente de supervisão.'},
+    {key:'social',label:'Interação social',bom:'Tem grupo de amigos, participa de atividades coletivas, relações saudáveis.',medio:'Poucos amigos, participação social esporádica, relações superficiais.',mau:'Isolamento social, evita atividades coletivas, conflitos frequentes.'},
+    {key:'comunicacao',label:'Comunicação',bom:'Argumenta com clareza, expressa sentimentos, comunicação assertiva.',medio:'Dificuldade ocasional em argumentar ou expressar emoções, comunicação passiva.',mau:'Não consegue argumentar ou expressar sentimentos, comunicação muito limitada ou agressiva.'},
+  ],
+};
+
+const Q={
+  pre:{p:[{q:'A criança consegue se alimentar sozinha com colher ou garfo?',o:YN},{q:'Consegue se vestir parcialmente (colocar sapatos, peças simples)?',o:YN},{q:'Demonstra interesse em brincar com outras crianças?',o:FR},{q:'Consegue seguir instruções simples?',o:YN}]},
+  escolar:{p:[{q:'Consegue preparar um lanche simples sozinho?',o:YN},{q:'Organiza o material escolar sem ajuda constante?',o:YN},{q:'Consegue realizar pequenas tarefas domésticas?',o:YN},{q:'Demonstra capacidade de resolver problemas simples?',o:FR}]},
+  adol:{p:[{q:'Consegue sair de casa sozinho para compromissos?',o:YN},{q:'Administra pequenas quantias de dinheiro com responsabilidade?',o:FR},{q:'Consegue organizar horários de estudo e lazer sem supervisão constante?',o:YN},{q:'Demonstra iniciativa em atividades domésticas ou escolares?',o:FR}]},
+  adulto:{p:[{q:'Consegue se vestir sozinho sem ajuda?',o:YN},{q:'Consegue tomar banho e cuidar da higiene pessoal de forma independente?',o:YN},{q:'Consegue preparar uma refeição simples sem supervisão?',o:YN},{q:'Precisa de ajuda para usar o telefone ou organizar compromissos?',o:YN},{q:'Consegue sair de casa sozinho para pequenas compras ou deslocamentos?',o:YN},{q:'Administra seus recursos financeiros sem supervisão?',o:YN},{q:'Consegue lembrar compromissos e horários sem auxílio constante?',o:YN}]},
+  idoso:{p:[{q:'Consegue se vestir sozinho sem ajuda?',o:YN},{q:'Consegue tomar banho e cuidar da higiene pessoal de forma independente?',o:YN},{q:'Consegue preparar refeições simples sem supervisão?',o:YN},{q:'Precisa de ajuda para usar o telefone ou organizar compromissos?',o:YN},{q:'Consegue sair de casa sozinho para pequenas compras ou deslocamentos?',o:YN},{q:'Administra seus recursos financeiros sem supervisão?',o:YN},{q:'Consegue lembrar compromissos e horários sem auxílio constante?',o:YN},{q:'Apresenta quedas frequentes ou dificuldade para se locomover?',o:YN}]},
+};
+
+// DSM organized by area and relevance per profile
+const DSM_GROUPS={
+  crianca:[
+    {grupo:'Neurodesenvolvimento',itens:['TDAH – Transtorno de Déficit de Atenção/Hiperatividade (F90)','TEA – Transtorno do Espectro Autista (F84.0)','DI – Deficiência Intelectual (F70-F79)','Transtorno do Desenvolvimento da Linguagem (F80)','Transtorno de Coordenação Motora (F82)','Dislexia / Transtorno de Aprendizagem (F81)']},
+    {grupo:'Ansiedade e Comportamento',itens:['Ansiedade de Separação (F93.0)','Fobia Específica (F40.2)','Mutismo Seletivo (F94.0)','TOD – Oposição Desafiante (F91.3)','Transtorno de Conduta (F91)','TEPT – Estresse Pós-Traumático (F43.1)']},
+    {grupo:'Humor',itens:['Transtorno Depressivo Maior – Infância (F32)','Transtorno Bipolar I (F31.1)','Transtorno Disruptivo do Humor (F34.8)']},
+  ],
+  adol:[
+    {grupo:'Neurodesenvolvimento',itens:['TDAH (F90)','TEA – Espectro Autista (F84.0)','Dislexia / Transtorno de Aprendizagem (F81)']},
+    {grupo:'Ansiedade',itens:['TAG – Ansiedade Generalizada (F41.1)','Transtorno do Pânico (F41.0)','Fobia Social / Ansiedade Social (F40.1)','TOC – Transtorno Obsessivo-Compulsivo (F42)','TEPT (F43.1)']},
+    {grupo:'Humor',itens:['Transtorno Depressivo Maior (F32/F33)','Distimia / TPD (F34.1)','Transtorno Bipolar I (F31.1)','Transtorno Bipolar II (F31.8)']},
+    {grupo:'Alimentação e Comportamento',itens:['Anorexia Nervosa (F50.0)','Bulimia Nervosa (F50.2)','TOD – Oposição Desafiante (F91.3)','Transtorno de Conduta (F91)']},
+    {grupo:'Personalidade (traços iniciais)',itens:['Traços de TP Borderline (F60.3)','Traços de TP Narcisista (F60.8)']},
+  ],
+  adulto:[
+    {grupo:'Transtornos de Humor',itens:['Transtorno Depressivo Maior (F32/F33)','Distimia / TPD (F34.1)','Transtorno Bipolar I (F31.1)','Transtorno Bipolar II (F31.8)','Ciclotimia (F34.0)']},
+    {grupo:'Ansiedade',itens:['TAG – Ansiedade Generalizada (F41.1)','Transtorno do Pânico (F41.0)','Fobia Social (F40.1)','Fobia Específica (F40.2)','TOC (F42)','TEPT (F43.1)','Transtorno de Ajustamento (F43.2)']},
+    {grupo:'Personalidade',itens:['TP Borderline (F60.3)','TP Narcisista (F60.8)','TP Histriônica (F60.4)','TP Esquiva (F60.6)','TP Dependente (F60.7)','TP Obsessivo-Compulsiva (F60.5)']},
+    {grupo:'Psicóticos e Bipolares Graves',itens:['Esquizofrenia (F20)','Transtorno Esquizoafetivo (F25)','Transtorno Delirante (F22)']},
+    {grupo:'Alimentação e Substâncias',itens:['Anorexia Nervosa (F50.0)','Bulimia Nervosa (F50.2)','Transtorno de Uso de Álcool (F10)','Transtorno de Uso de Substâncias (F11-F19)']},
+    {grupo:'Neurodesenvolvimento',itens:['TDAH em adultos (F90)','TEA em adultos (F84.0)']},
+  ],
+  idoso:[
+    {grupo:'Neurocognição e Demências',itens:["Doença de Alzheimer (F00 / G30)",'Demência Vascular (F01)','Demência por Corpo de Lewy (F02.8)','Demência Frontotemporal – DFT (F02.0)','Demência na Doença de Parkinson (F02.3)','TCL – Transtorno Cognitivo Leve (F06.7)','Delirium (F05)']},
+    {grupo:'Humor',itens:['Transtorno Depressivo Maior (F32/F33)','Distimia (F34.1)','Transtorno Bipolar I (F31.1)','Transtorno Bipolar II (F31.8)']},
+    {grupo:'Ansiedade',itens:['TAG – Ansiedade Generalizada (F41.1)','Transtorno do Pânico (F41.0)','Fobia Específica (F40.2)','TOC (F42)','TEPT (F43.1)']},
+    {grupo:'Personalidade',itens:['TP Borderline (F60.3)','TP Obsessivo-Compulsiva (F60.5)','TP Dependente (F60.7)']},
+    {grupo:'Psicóticos',itens:['Esquizofrenia de início tardio (F20)','Transtorno Delirante (F22)','Transtorno Esquizoafetivo (F25)']},
+    {grupo:'Substâncias',itens:['Transtorno de Uso de Álcool (F10)','Uso de Benzodiazepínicos / Dependência (F13)']},
+  ],
+};
+
+function getDSMGroups(pid){
+  if(pid==='pre'||pid==='escolar') return DSM_GROUPS.crianca;
+  if(pid==='adol') return DSM_GROUPS.adol;
+  if(pid==='adulto') return DSM_GROUPS.adulto;
+  if(pid==='idoso') return DSM_GROUPS.idoso;
+  return DSM_GROUPS.adulto;
+}
+
+let perfil=null, respostas={}, obsResp={}, dsmSel=[], dsmOutros=[], clockScore=null, clockPhotoUrl='';
+let registros=[], editIdx=null, editRespostas={}, editObsResp={}, editDsmSel=[], editDsmOutros=[], editClockScore=null, editClockPhotoUrl='';
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function checkPin(v){if(v.length===4){if(v==='1234'){document.getElementById('main-tabs').style.display='flex';initCad();loadFromFirebase();show('s-nova');}else{document.getElementById('pin-err').style.display='block';document.getElementById('pin').value='';}}}
+
+async function loadFromFirebase(){
+  const doLoad = async () => {
+    const docs = await window.fsGetAll();
+    registros = docs;
+  };
+  if(window._firebaseReady){ await doLoad(); }
+  else { window._pendingLoad = doLoad; }
+}
+function switchTab(t){document.querySelectorAll('.htab').forEach((b,i)=>b.classList.toggle('active',['nova','historico'][i]===t));if(t==='nova')show('s-nova');else{renderHist();show('s-historico');}}
+
+function initCad(){
+  document.getElementById('s-cad').style.display='block';
+  document.getElementById('s-form').style.display='none';
+  const g=document.getElementById('pgrid');
+  g.innerHTML=PROFILES.map(p=>`<button class="pbtn" onclick="selP('${p.id}',this)"><div class="picon">${p.icon}</div><div class="plabel">${p.label.replace('\n','<br>')}</div></button>`).join('');
+  document.getElementById('data-ent').value=new Date().toISOString().split('T')[0];
+  ['nome','responsavel','dnasc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('idade-badge').innerHTML='';
+  perfil=null;respostas={};obsResp={};dsmSel=[];dsmOutros=[];clockScore=null;clockPhotoUrl='';
+}
+function voltarCad(){document.getElementById('s-cad').style.display='block';document.getElementById('s-form').style.display='none';}
+function selP(id,el){document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('selected'));el.classList.add('selected');perfil=id;}
+function calcIdade(){
+  const v=document.getElementById('dnasc').value;if(!v){document.getElementById('idade-badge').innerHTML='';return;}
+  const n=new Date(v),h=new Date();let a=h.getFullYear()-n.getFullYear();
+  const m=h.getMonth()-n.getMonth();if(m<0||(m===0&&h.getDate()<n.getDate()))a--;
+  document.getElementById('idade-badge').innerHTML=`<span class="age-badge">${a} anos</span>`;
+}
+function calcIdadeStr(d){
+  const n=new Date(d),h=new Date();let a=h.getFullYear()-n.getFullYear();
+  const m=h.getMonth()-n.getMonth();if(m<0||(m===0&&h.getDate()<n.getDate()))a--;return a+' anos';
+}
+
+function buildObsScales(prefix,pid,savedObs){
+  const scales=OBS_SCALES[pid]||[];
+  if(!scales.length)return '';
+  let html='';
+  scales.forEach(s=>{
+    const saved=savedObs&&savedObs[s.key]?savedObs[s.key]:null;
+    html+=`<div class="obs-block"><div class="obs-block-title">${s.label}</div><div class="obs-scale">`;
+    [{cls:'bom',lbl:'Bom',desc:s.bom},{cls:'medio',lbl:'Intermediário',desc:s.medio},{cls:'mau',lbl:'Comprometido',desc:s.mau}].forEach(o=>{
+      const isSel=saved===o.cls;
+      html+=`<div class="obs-opt${isSel?' sel-'+o.cls:''}" id="${prefix}os_${s.key}_${o.cls}" onclick="selObsScale('${s.key}','${o.cls}','${prefix}')"><div class="obs-opt-label">${o.lbl}</div><div class="obs-opt-desc">${o.desc}</div></div>`;
+    });
+    html+='</div></div>';
+  });
+  return html;
+}
+
+function selObsScale(key,cls,prefix){
+  const store=prefix==='e_'?editObsResp:obsResp;
+  const prev=store[key];
+  if(prev){const el=document.getElementById(`${prefix}os_${key}_${prev}`);if(el)el.className='obs-opt';}
+  if(prev===cls){delete store[key];return;}
+  store[key]=cls;
+  const el=document.getElementById(`${prefix}os_${key}_${cls}`);
+  if(el)el.className=`obs-opt sel-${cls}`;
+}
+
+function buildClockTest(prefix,savedScore,savedPhoto){
+  const p=prefix||'';
+  const ph=savedPhoto||'';
+  const sc=savedScore||null;
+  const opts=[
+    {cls:'ok',lbl:'Normal',desc:'Círculo bem traçado, números posicionados corretamente, ponteiros indicando o horário pedido.'},
+    {cls:'parcial',lbl:'Alteração leve',desc:'Pequenos erros de posicionamento, números fora do lugar, ou ponteiros com leve imprecisão.'},
+    {cls:'alt',lbl:'Alteração significativa',desc:'Números ausentes, desordem acentuada, incapacidade de marcar o horário, desenho desorganizado.'},
+  ];
+  let html=`<div class="clock-section">
+    <p style="font-size:12px;color:#666;margin-bottom:10px">Instrução: <em>"Desenhe um relógio com todos os números e marque as <strong>11 horas e 10 minutos</strong>."</em></p>
+    <div class="sec-title" style="margin-top:0">Classificação do desenho</div>
+    <div class="clock-score-row">`;
+  opts.forEach(o=>{
+    const isSel=sc===o.cls;
+    html+=`<div class="score-opt${isSel?' sel-'+o.cls:''}" id="${p}ck_${o.cls}" onclick="selClock('${o.cls}','${p}')"><div class="score-label">${o.lbl}</div><div class="score-desc">${o.desc}</div></div>`;
+  });
+  html+=`</div>
+    <div class="sec-title">Foto do desenho do relógio</div>
+    <input type="file" id="${p}clock-file" accept="image/*" capture="environment" onchange="loadClockPhoto(this,'${p}')">
+    <div class="clock-photo-area" onclick="document.getElementById('${p}clock-file').click()">
+      <img id="${p}clock-preview" class="clock-preview" src="${ph}" style="${ph?'display:block':'display:none'}">
+      <div id="${p}clock-placeholder" style="${ph?'display:none':''}">
+        <div class="clock-photo-icon">📸</div>
+        <p>Toque para fotografar o desenho do relógio</p>
+      </div>
+    </div>
+    <div class="lbl">Observações sobre o teste do relógio</div>
+    <textarea id="${p}clock-obs" placeholder="Descreva o desempenho, comportamento durante a tarefa...">${''}</textarea>
+  </div>`;
+  return html;
+}
+
+function selClock(cls,p){
+  ['ok','parcial','alt'].forEach(c=>{
+    const el=document.getElementById(`${p}ck_${c}`);
+    if(el)el.className='score-opt';
+  });
+  const el=document.getElementById(`${p}ck_${cls}`);
+  if(el)el.className=`score-opt sel-${cls}`;
+  if(p==='e_')editClockScore=cls;else clockScore=cls;
+}
+
+function loadClockPhoto(inp,p){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    const url=e.target.result;
+    if(p==='e_')editClockPhotoUrl=url;else clockPhotoUrl=url;
+    const prev=document.getElementById(`${p}clock-preview`);
+    const ph=document.getElementById(`${p}clock-placeholder`);
+    if(prev){prev.src=url;prev.style.display='block';}
+    if(ph)ph.style.display='none';
+  };
+  r.readAsDataURL(f);
+}
+
+function buildHipCard(prefix,pid,selArr,outrosArr){
+  const p=prefix||'';
+  const hasHip=selArr.length>0||outrosArr.length>0;
+  // triagem: null = not answered, true = sim, false = nao
+  const triagem=window[`${p}hipTriagem`]!==undefined?window[`${p}hipTriagem`]:null;
+  const showDsm= triagem===true || hasHip;
+  return `<div class="card" id="${p}hip-card">
+    <div class="sec-title">Hipótese Diagnóstica Inicial — DSM-5</div>
+    <p style="font-size:12px;color:#555;margin-bottom:12px">Existe hipótese diagnóstica a registrar nesta entrevista?</p>
+    <div class="opts" style="margin-bottom:14px">
+      <button class="opt${showDsm?' sel':''}" id="${p}hip-sim" onclick="setTriagem(true,'${p}')">Sim</button>
+      <button class="opt${triagem===false?' sel':''}" id="${p}hip-nao" onclick="setTriagem(false,'${p}')">Não</button>
+    </div>
+    <div id="${p}hip-body" style="display:${showDsm?'block':'none'}">
+      <div style="font-size:11px;color:#888;margin-bottom:10px">Transtornos organizados por área e faixa etária</div>
+      ${buildDSM(prefix,pid,selArr,outrosArr)}
+    </div>
+  </div>`;
+}
+
+function setTriagem(val,p){
+  window[`${p}hipTriagem`]=val;
+  const sim=document.getElementById(`${p}hip-sim`);
+  const nao=document.getElementById(`${p}hip-nao`);
+  const body=document.getElementById(`${p}hip-body`);
+  if(sim)sim.className=val?'opt sel':'opt';
+  if(nao)nao.className=val?'opt':'opt sel';
+  if(body)body.style.display=val?'block':'none';
+  // if nao, clear selections
+  if(!val){
+    const arr=p==='e_'?editDsmSel:dsmSel;
+    arr.length=0;
+    renderOutros(p,[]);
+    if(p==='e_')editDsmOutros.length=0;else dsmOutros.length=0;
+    // uncheck all dsm visually
+    document.querySelectorAll(`[id^="${p}dsm_"]`).forEach(el=>{
+      el.classList.remove('checked');
+      const cb=el.querySelector('input');if(cb)cb.checked=false;
+    });
+  }
+}
+
+function buildDSM(prefix,pid,selArr,outrosArr){
+  const groups=getDSMGroups(pid);
+  const p=prefix||'';
+  let html='';
+  groups.forEach((g,gi)=>{
+    html+=`<div class="dsm-group"><div class="dsm-group-title">${g.grupo}</div><div class="dsm-grid">`;
+    g.itens.forEach((d,ii)=>{
+      const uid=`${p}dsm_${gi}_${ii}`;
+      const chk=selArr.includes(d);
+      html+=`<div class="dsm-check${chk?' checked':''}" id="${uid}" onclick="toggleDSM('${d}','${uid}','${p}')"><input type="checkbox"${chk?' checked':''} onclick="event.stopPropagation();toggleDSM('${d}','${uid}','${p}')"><label>${d}</label></div>`;
+    });
+    html+=`</div></div>`;
+  });
+  html+=`<div class="dsm-outros-list" id="${p}dsm-ol">`;
+  outrosArr.forEach((o,i)=>html+=`<span class="dsm-tag">${o}<button onclick="remOutro(${i},'${p}')">×</button></span>`);
+  html+=`</div><div class="dsm-add-row"><input type="text" id="${p}dsm-ni" placeholder="Adicionar outro diagnóstico..."><button onclick="addOutro('${p}')">+ Adicionar</button></div>`;
+  return html;
+}
+
+function toggleDSM(d,uid,p){
+  const arr=p==='e_'?editDsmSel:dsmSel;const idx=arr.indexOf(d);
+  const wrap=document.getElementById(uid);
+  if(idx>=0){arr.splice(idx,1);if(wrap){wrap.classList.remove('checked');wrap.querySelector('input').checked=false;}}
+  else{arr.push(d);if(wrap){wrap.classList.add('checked');wrap.querySelector('input').checked=true;}}
+}
+function addOutro(p){const inp=document.getElementById(`${p}dsm-ni`);const v=inp.value.trim();if(!v)return;const arr=p==='e_'?editDsmOutros:dsmOutros;arr.push(v);inp.value='';renderOutros(p,arr);}
+function remOutro(i,p){const arr=p==='e_'?editDsmOutros:dsmOutros;arr.splice(i,1);renderOutros(p,arr);}
+function renderOutros(p,arr){const el=document.getElementById(`${p}dsm-ol`);if(!el)return;el.innerHTML=arr.map((o,i)=>`<span class="dsm-tag">${o}<button onclick="remOutro(${i},'${p}')">×</button></span>`).join('');}
+
+function buildForm(pid,resp,obsR,isEdit,dsmS,dsmO,cScore,cPhoto){
+  const data=Q[pid];const pLabel=PROFILES.find(p=>p.id===pid).label.replace('\n',' ');
+  const prefix=isEdit?'e_':'';
+  let html=`<div class="card"><div class="sec-title">Observações do avaliador — ${pLabel}</div>`;
+  html+=buildObsScales(prefix,pid,obsR);
+  html+=`<div class="lbl" style="margin-top:14px">Notas adicionais</div><textarea id="${prefix}obs-nota" placeholder="Observações adicionais livres..."></textarea></div>`;
+  html+=`<div class="card"><div class="sec-title">Questões objetivas</div>`;
+  data.p.forEach((p,i)=>{
+    html+=`<div class="qblock"><div class="qtxt">${i+1}. ${p.q}</div><div class="opts">`;
+    p.o.forEach(o=>{const sel=resp[String(i)]===o?'sel':'';html+=`<button class="opt ${sel}" data-q="${i}" onclick="selOpt(this,'${o}','${prefix}')">${o}</button>`;});
+    html+='</div></div>';
+  });
+  html+=`<div class="lbl" style="margin-top:10px">Observações gerais</div><textarea id="${prefix}obs-geral" placeholder="Observações gerais..."></textarea></div>`;
+  if(pid==='idoso'){
+    html+=`<div class="card"><div class="sec-title">Teste do Relógio</div>${buildClockTest(prefix,cScore,cPhoto)}</div>`;
+  }
+  html+=buildHipCard(prefix,pid,dsmS||[],dsmO||[]);
+
+  return html;
+}
+
+function iniciar(){
+  if(!perfil){alert('Selecione um perfil clínico');return;}
+  if(!document.getElementById('nome').value.trim()){alert('Informe o nome do paciente');return;}
+  respostas={};obsResp={};dsmSel=[];dsmOutros=[];clockScore=null;clockPhotoUrl='';
+  document.getElementById('ent-content').innerHTML=buildForm(perfil,{},{},false,[],[],null,'');
+  document.getElementById('s-cad').style.display='none';
+  document.getElementById('s-form').style.display='block';
+}
+function selOpt(el,v,prefix){
+  const q=el.dataset.q;
+  document.querySelectorAll(`.opt[data-q="${q}"]`).forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');if(prefix==='e_')editRespostas[q]=v;else respostas[q]=v;
+}
+function coletarExtra(prefix){
+  return{
+    obsGeral:document.getElementById(`${prefix}obs-geral`)?.value||'',
+    obsNota:document.getElementById(`${prefix}obs-nota`)?.value||'',
+    clockObs:document.getElementById(`${prefix}clock-obs`)?.value||'',
+  };
+}
+async function salvarRegistro(){
+  const nome=document.getElementById('nome').value||'—';const ex=coletarExtra('');
+  const reg={nome,responsavel:document.getElementById('responsavel').value||'',dnasc:document.getElementById('dnasc').value||'',dataEnt:document.getElementById('data-ent').value||'',perfil,respostas:{...respostas},obsResp:{...obsResp},obsGeral:ex.obsGeral,obsNota:ex.obsNota,clockScore:clockScore||null,clockPhotoUrl:clockPhotoUrl||'',clockObs:ex.clockObs,dsmSel:[...dsmSel],dsmOutros:[...dsmOutros],savedAt:new Date().toISOString()};
+  const btn=document.querySelector('#s-form .btn-sec:last-child');if(btn)btn.textContent='Salvando...';
+  const id = await window.fsAddDoc(reg);
+  if(id){ reg._firebaseId=id; registros.unshift(reg); alert(`Entrevista de "${nome}" salva!`); }
+  else alert('Erro ao salvar. Verifique a conexão.');
+  if(btn)btn.textContent='Salvar';
+}
+function renderHist(){
+  const el=document.getElementById('hist-lista');
+  if(!registros.length){el.innerHTML='<div class="empty-state">Nenhuma entrevista realizada ainda.</div>';return;}
+  el.innerHTML=registros.map((r,i)=>{
+    const pl=PROFILES.find(p=>p.id===r.perfil)?.label.replace('\n',' ')||r.perfil;
+    const ib=r.dnasc?calcIdadeStr(r.dnasc):'';
+    const dc=(r.dsmSel||[]).length+(r.dsmOutros||[]).length;
+    return `<div class="hist-item"><div class="hist-top"><div><div class="hist-nome">${r.nome}</div><div class="hist-info">${r.dataEnt||''}${ib?' · '+ib:''} · ${r.savedAt}${dc?' · '+dc+' hipótese(s)':''}</div></div><span class="hist-badge">${pl}</span></div><div class="hist-actions"><button class="btn-edit" onclick="editarReg(${i})">Editar</button><button class="btn-pdf" style="padding:6px 14px;font-size:12px" onclick="gerarPDFIdx(${i})">PDF</button><button class="btn-del" onclick="delReg(${i})">Excluir</button></div></div>`;
+  }).join('');
+}
+function editarReg(i){
+  editIdx=i;const r=registros[i];
+  editRespostas={...r.respostas};editObsResp=JSON.parse(JSON.stringify(r.obsResp||{}));
+  editDsmSel=[...(r.dsmSel||[])];editDsmOutros=[...(r.dsmOutros||[])];
+  editClockScore=r.clockScore||null;editClockPhotoUrl=r.clockPhotoUrl||'';
+  let html=`<div class="card"><div class="sec-title">Editando: ${r.nome}</div>
+    <div class="field"><div class="lbl">Nome completo</div><input type="text" id="e_nome" value="${r.nome}"></div>
+    <div class="field"><div class="lbl">Responsável</div><input type="text" id="e_resp" value="${r.responsavel||''}"></div>
+    <div class="row2"><div class="field"><div class="lbl">Data de nascimento</div><input type="date" id="e_dnasc" value="${r.dnasc||''}"></div>
+    <div class="field"><div class="lbl">Data da entrevista</div><input type="date" id="e_dataEnt" value="${r.dataEnt||''}"></div></div></div>`;
+  html+=buildForm(r.perfil,editRespostas,editObsResp,true,editDsmSel,editDsmOutros,editClockScore,editClockPhotoUrl);
+  // restore obs/geral after render
+  document.getElementById('edit-content').innerHTML=html;
+  setTimeout(()=>{
+    const og=document.getElementById('e_obs-geral');if(og)og.value=r.obsGeral||'';
+    const on=document.getElementById('e_obs-nota');if(on)on.value=r.obsNota||'';
+    const co=document.getElementById('e_clock-obs');if(co)co.value=r.clockObs||'';
+  },50);
+  show('s-edicao');document.querySelectorAll('.htab').forEach(t=>t.classList.remove('active'));
+}
+async function salvarEdicao(){
+  if(editIdx===null)return;const r=registros[editIdx];const ex=coletarExtra('e_');
+  const updated={...r,nome:document.getElementById('e_nome')?.value||r.nome,responsavel:document.getElementById('e_resp')?.value||'',dnasc:document.getElementById('e_dnasc')?.value||'',dataEnt:document.getElementById('e_dataEnt')?.value||'',respostas:{...editRespostas},obsResp:{...editObsResp},obsGeral:ex.obsGeral,obsNota:ex.obsNota,clockScore:editClockScore,clockPhotoUrl:editClockPhotoUrl,clockObs:ex.clockObs,dsmSel:[...editDsmSel],dsmOutros:[...editDsmOutros],savedAt:new Date().toISOString()};
+  if(r._firebaseId){ const ok=await window.fsUpdateDoc(r._firebaseId,updated); if(!ok){alert('Erro ao salvar.');return;} }
+  registros[editIdx]=updated;
+  alert('Alterações salvas!');switchTab('historico');
+}
+async function delReg(i){
+  if(!confirm(`Excluir entrevista de "${registros[i].nome}"?`))return;
+  const r=registros[i];
+  if(r._firebaseId) await window.fsDeleteDoc(r._firebaseId);
+  registros.splice(i,1);renderHist();
+}
+
+const NL={bom:'Bom',medio:'Intermediário',mau:'Comprometido'};
+const CL={ok:'Normal',parcial:'Alteração leve',alt:'Alteração significativa'};
+const CLR={bom:[22,163,74],medio:[217,119,6],mau:[220,38,38],ok:[22,163,74],parcial:[217,119,6],alt:[220,38,38]};
+
+function buildPDF(reg){
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',format:'a4'});
+  const data=Q[reg.perfil];const pl=PROFILES.find(p=>p.id===reg.perfil)?.label.replace('\n',' ')||reg.perfil;
+  const ib=reg.dnasc?calcIdadeStr(reg.dnasc):'';
+  let y=15;
+  doc.setFillColor(123,0,196);doc.rect(0,0,210,30,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(20);doc.setFont('helvetica','italic');doc.text('Lucia Kratz',15,14);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.text('Entrevista Clínica Inicial · CRP 09/20590 · Goiânia-GO',15,22);
+  y=40;
+  doc.setTextColor(40,40,40);doc.setFontSize(10);doc.setFont('helvetica','bold');doc.text('Dados do Paciente',15,y);y+=6;
+  doc.setFont('helvetica','normal');doc.setFontSize(9);
+  doc.text(`Nome: ${reg.nome}`,15,y);y+=5;
+  if(reg.responsavel)doc.text(`Responsável: ${reg.responsavel}`,15,y),y+=5;
+  doc.text(`Nasc.: ${reg.dnasc||'—'}  ${ib}   Entrevista: ${reg.dataEnt||'—'}   Perfil: ${pl}`,15,y);y+=8;
+  doc.setDrawColor(220,200,240);doc.line(15,y,195,y);y+=7;
+
+  const scales=OBS_SCALES[reg.perfil]||[];
+  if(scales.length){
+    if(y>260){doc.addPage();y=15;}
+    doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(123,0,196);doc.text('Observações do Avaliador',15,y);y+=6;
+    scales.forEach(s=>{
+      const nivel=reg.obsResp&&reg.obsResp[s.key];
+      if(y>265){doc.addPage();y=15;}
+      doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(50,50,50);doc.text(`${s.label}:`,15,y);
+      if(nivel){
+        const color=CLR[nivel]||[80,80,80];
+        doc.setTextColor(...color);doc.text(`[${NL[nivel]}]`,195,y,'right');
+        doc.setTextColor(80,80,80);doc.setFont('helvetica','normal');
+        const lines=doc.splitTextToSize(s[nivel]||'',170);y+=5;doc.text(lines,18,y);y+=lines.length*4.5+2;
+      } else {doc.setTextColor(150,150,150);doc.setFont('helvetica','normal');doc.text('Não avaliado',195,y,'right');y+=6;}
+    });
+    if(reg.obsNota){const lines=doc.splitTextToSize(`Notas: ${reg.obsNota}`,175);if(y+lines.length*5>275){doc.addPage();y=15;}doc.setTextColor(50,50,50);doc.setFontSize(9);doc.text(lines,15,y);y+=lines.length*5+2;}
+    y+=4;
+  }
+
+  if(y>265){doc.addPage();y=15;}
+  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(123,0,196);doc.text('Questões Objetivas',15,y);y+=6;
+  doc.setTextColor(50,50,50);
+  data.p.forEach((p,i)=>{
+    const rv=reg.respostas[String(i)]||'—';const lines=doc.splitTextToSize(`${i+1}. ${p.q}`,155);
+    if(y+lines.length*5+2>275){doc.addPage();y=15;}
+    doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text(lines,15,y);
+    doc.setFont('helvetica','bold');doc.setTextColor(123,0,196);doc.text(`[${rv}]`,195,y,'right');
+    doc.setFont('helvetica','normal');doc.setTextColor(50,50,50);y+=lines.length*5+3;
+  });
+  if(reg.obsGeral){const lines=doc.splitTextToSize(`Obs.: ${reg.obsGeral}`,175);if(y+lines.length*5>275){doc.addPage();y=15;}doc.setFontSize(9);doc.text(lines,15,y);y+=lines.length*5+4;}
+
+  // Clock test
+  if(reg.perfil==='idoso'){
+    if(y+10>265){doc.addPage();y=15;}
+    doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(123,0,196);doc.text('Teste do Relógio',15,y);y+=6;
+    if(reg.clockScore){
+      const color=CLR[reg.clockScore]||[80,80,80];
+      doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(50,50,50);doc.text('Resultado:',15,y);
+      doc.setTextColor(...color);doc.text(`[${CL[reg.clockScore]}]`,195,y,'right');
+      doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);y+=5;
+    }
+    if(reg.clockObs){const lines=doc.splitTextToSize(`Obs.: ${reg.clockObs}`,175);if(y+lines.length*5>275){doc.addPage();y=15;}doc.setFontSize(9);doc.setTextColor(50,50,50);doc.text(lines,15,y);y+=lines.length*5+3;}
+    if(reg.clockPhotoUrl){
+      if(y+65>275){doc.addPage();y=15;}
+      try{doc.addImage(reg.clockPhotoUrl,'JPEG',15,y,80,60);}catch(e){try{doc.addImage(reg.clockPhotoUrl,'PNG',15,y,80,60);}catch(e2){}}
+      y+=65;
+    }
+    y+=4;
+  }
+
+  const todos=[...(reg.dsmSel||[]),...(reg.dsmOutros||[])];
+  if(todos.length){
+    if(y+10>265){doc.addPage();y=15;}
+    doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(123,0,196);doc.text('Hipótese Diagnóstica — DSM-5',15,y);y+=6;
+    doc.setTextColor(50,50,50);doc.setFont('helvetica','normal');doc.setFontSize(9);
+    todos.forEach(h=>{if(y>275){doc.addPage();y=15;}doc.text(`• ${h}`,15,y);y+=5;});
+  }
+  const pg=doc.getNumberOfPages();
+  for(let i=1;i<=pg;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(180,180,180);doc.text(`Lucia Kratz · CRP 09/20590 · Página ${i} de ${pg}`,105,290,'center');}
+  return{doc,nome:reg.nome,data:reg.dataEnt};
+}
+function gerarPDF(){
+  const nome=document.getElementById('nome').value||'paciente';const ex=coletarExtra('');
+  const reg={nome,responsavel:document.getElementById('responsavel').value||'',dnasc:document.getElementById('dnasc').value||'',dataEnt:document.getElementById('data-ent').value||'',perfil,respostas:{...respostas},obsResp:{...obsResp},obsGeral:ex.obsGeral,obsNota:ex.obsNota,clockScore,clockPhotoUrl,clockObs:ex.clockObs,dsmSel:[...dsmSel],dsmOutros:[...dsmOutros]};
+  const{doc,data}=buildPDF(reg);doc.save(`entrevista_${nome.replace(/\s+/g,'_')}_${data}.pdf`);
+}
+function gerarPDFIdx(i){const{doc,nome,data}=buildPDF(registros[i]);doc.save(`entrevista_${nome.replace(/\s+/g,'_')}_${data}.pdf`);}
+function gerarPDFEdicao(){
+  if(editIdx===null)return;const r=registros[editIdx];const ex=coletarExtra('e_');
+  const reg={...r,nome:document.getElementById('e_nome')?.value||r.nome,responsavel:document.getElementById('e_resp')?.value||'',dnasc:document.getElementById('e_dnasc')?.value||'',dataEnt:document.getElementById('e_dataEnt')?.value||'',respostas:{...editRespostas},obsResp:{...editObsResp},obsGeral:ex.obsGeral,obsNota:ex.obsNota,clockScore:editClockScore,clockPhotoUrl:editClockPhotoUrl,clockObs:ex.clockObs,dsmSel:[...editDsmSel],dsmOutros:[...editDsmOutros]};
+  const{doc,nome,data}=buildPDF(reg);doc.save(`entrevista_${nome.replace(/\s+/g,'_')}_${data}.pdf`);
+}
+</script>
+</body>
+</html>
