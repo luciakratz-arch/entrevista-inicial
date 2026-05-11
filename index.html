@@ -566,11 +566,18 @@ function coletarExtra(prefix){
 }
 async function salvarRegistro(){
   const nome=document.getElementById('nome').value||'—';const ex=coletarExtra('');
-  const reg={nome,responsavel:document.getElementById('responsavel').value||'',dnasc:document.getElementById('dnasc').value||'',dataEnt:document.getElementById('data-ent').value||'',perfil,respostas:{...respostas},obsResp:{...obsResp},obsGeral:ex.obsGeral,obsNota:ex.obsNota,clockScore:clockScore||null,clockPhotoUrl:clockPhotoUrl||'',clockObs:ex.clockObs,dsmSel:[...dsmSel],dsmOutros:[...dsmOutros],savedAt:new Date().toISOString()};
-  const btn=document.querySelector('#s-form .btn-sec:last-child');if(btn)btn.textContent='Salvando...';
-  const id = await window.fsAddDoc(reg);
-  if(id){ reg._firebaseId=id; registros.unshift(reg); alert(`Entrevista de "${nome}" salva!`); }
-  else alert('Erro ao salvar. Verifique a conexão.');
+  const reg={nome,responsavel:document.getElementById('responsavel').value||'',dnasc:document.getElementById('dnasc').value||'',dataEnt:document.getElementById('data-ent').value||'',perfil,respostas:{...respostas},obsResp:{...obsResp},obsGeral:ex.obsGeral,obsNota:ex.obsNota,clockScore:clockScore||null,clockPhotoUrl:'',clockObs:ex.clockObs,dsmSel:[...dsmSel],dsmOutros:[...dsmOutros],savedAt:new Date().toISOString()};
+  const btn=event&&event.target?event.target:null;if(btn)btn.textContent='Salvando...';
+  try{
+    const waitFirebase=()=>new Promise(res=>{
+      if(window.fsAddDoc)res();
+      else{const t=setInterval(()=>{if(window.fsAddDoc){clearInterval(t);res();}},100);}
+    });
+    await waitFirebase();
+    const id=await window.fsAddDoc(reg);
+    if(id){reg._firebaseId=id;registros.unshift(reg);alert(`Entrevista de "${nome}" salva com sucesso!`);}
+    else alert('Erro ao salvar. Tente novamente.');
+  }catch(e){console.error(e);alert('Erro: '+e.message);}
   if(btn)btn.textContent='Salvar';
 }
 function renderHist(){
